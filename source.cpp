@@ -19,19 +19,19 @@ void imbwareaopen(const Mat srcBw, Mat& dstBw, Mat& dstboundary, int size);
 
 int main()
 {
-    printf("Hello Open CV!");
+	printf("Hello Open CV!");
 	vector<Mat> images(4);
 	Mat dst;
 
-    Mat r = imread("C:/Users/1/Desktop/毕业设计/毕业设计/1.bmp");  //读取图片
+	Mat r = imread("C:/Users/1/Desktop/毕业设计/毕业设计/1.bmp");  //读取图片
 	Mat r_gray;
 	cvtColor(r, r_gray, COLOR_BGR2GRAY);//转化为灰度图像
 
-	images[0] = r_gray.clone();
+	images[0] = r.clone();
 
 	/*自适应二值化*/
 	Mat x;
-	adaptiveThreshold(r_gray,x,255, ADAPTIVE_THRESH_MEAN_C, THRESH_BINARY,99,1);//均值二值
+	adaptiveThreshold(r_gray, x, 255, ADAPTIVE_THRESH_MEAN_C, THRESH_BINARY, 99, 1);//均值二值
 	//resize(x, x, Size(400, 300));
 	//imshow("1", x);
 
@@ -42,7 +42,7 @@ int main()
 
 	/*开闭*/
 	Mat kernel = getStructuringElement(MORPH_RECT, Size(5, 5));
-	Mat m = x; 
+	Mat m = x;
 	int n = 1;//开闭操作次数
 	for (int i = 0; i < n; i++)
 	{
@@ -56,7 +56,7 @@ int main()
 	n = 1;//膨胀操作次数
 	for (int i = 0; i < n; i++)
 	{
-		dilate(m,m,kernel);//膨胀操作
+		dilate(m, m, kernel);//膨胀操作
 	}
 	//imshow("膨胀", m);
 
@@ -64,20 +64,31 @@ int main()
 	/*孔洞填充*/
 	fillHole(m, m);//孔洞填充操作
 	//imshow("孔洞填充", m);
-	images[1] = m.clone();
+	Mat hole_bgr;
+	cvtColor(m, hole_bgr, COLOR_GRAY2BGR);//转化为灰度图像
+	images[1] = hole_bgr.clone();
 
 
 	/*删除小面积对象并输出轮廓	*/
-	Mat boundary = Mat::zeros(m.size(), CV_8UC1);//
+	Mat boundary = Mat::zeros(m.size(), CV_8UC3);//
+	Mat skyblue_img(m.size(), CV_8UC3, Scalar(255, 255, 0));//天蓝色图像（红色反色）
+	Mat boundary_red;
 	imbwareaopen(m, m, boundary, 6000);//删除小面积对象并输出轮廓
+
 	//imshow("删除小面积", m);
-	//imshow("轮廓", boundary);
-	images[2] = m.clone();
-	images[3] = boundary.clone();
+	//imshow("轮廓", red_img);
+	Mat boundary_bgr;
+	cvtColor(boundary, boundary_bgr, COLOR_GRAY2BGR);//转化为灰度图像
+	subtract(boundary_bgr , skyblue_img, boundary_red);
 
 
-	//resize(m, m, Size(400, 300));
-	//imshow("3", m);
+	Mat delete_bgr;
+	cvtColor(m, delete_bgr, COLOR_GRAY2BGR);//转化为灰度图像
+	images[2] = delete_bgr.clone();
+	images[3] = boundary_red.clone();
+
+
+	//imshow("3", boundary_red);
 
 	/*合并输出展示*/
 	mergeImage(dst, images);
@@ -113,7 +124,6 @@ void mergeImage(Mat& dst, vector<Mat>& images)
 		宽：cols * 2
 	*/
 	dst.create(rows * imgCount / 2, cols * 2, CV_8UC3);
-	cvtColor(dst, dst, COLOR_BGR2GRAY);
 
 	for (int i = 0; i < imgCount; i++)
 	{
